@@ -101,10 +101,8 @@ admission_review_msg_patch = {
 )
 def test_get_admission_review(monkeypatch, uid, allowed, patch, msg, dm, review):
     monkeypatch.setenv("KUBE_VERSION", "v1.20.0")
-    assert (
-        ut.get_admission_review(uid, allowed, patch=patch, msg=msg, detection_mode=dm)
-        == review
-    )
+    monkeypatch.setenv("DETECTION_MODE", dm)
+    assert ut.get_admission_review(uid, allowed, patch=patch, msg=msg) == review
 
 
 @pytest.mark.parametrize(
@@ -145,3 +143,22 @@ def test_validate_schema(
 def test_get_kube_version(monkeypatch, major, minor, patch, set_version):
     monkeypatch.setenv("KUBE_VERSION", set_version)
     assert ut.get_kube_version() == (major, minor, patch)
+
+
+@pytest.mark.parametrize(
+    "flag, value, default, expected_value",
+    [
+        ("FLAG", True, None, True),
+        ("FLAG", "1", None, True),
+        ("FLAG", "True", None, True),
+        ("FLAG", "False", None, False),
+        ("FLAG", "0", None, False),
+        ("FLAG", None, None, False),
+        ("FLAG", None, True, True),
+        ("FLAG", None, False, False),
+    ],
+)
+def test_feature_flag_on(monkeypatch, flag, value, default, expected_value):
+    if value is not None:
+        monkeypatch.setenv(flag, value)
+    assert ut.feature_flag_on(flag, default=default) == expected_value

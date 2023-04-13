@@ -7,6 +7,7 @@ from typing import Optional
 import yaml
 from jsonschema import FormatChecker, ValidationError, validate
 
+import connaisseur.constants as const
 from connaisseur.exceptions import PathTraversalError
 
 
@@ -32,7 +33,6 @@ def get_admission_review(
     allowed: bool,
     patch: Optional[list] = None,
     msg: Optional[str] = None,
-    detection_mode: bool = False,
 ):
     """
     Get a standardized response object with patching instructions for the
@@ -77,6 +77,7 @@ def get_admission_review(
           }
         }
     """
+    detection_mode = feature_flag_on(const.DETECTION_MODE)
     _, minor, _ = get_kube_version()
     api = "v1beta1" if int(minor) < 17 else "v1"
     review = {
@@ -130,3 +131,8 @@ def get_kube_version():
     regex = r"v(\d)\.(\d{1,2})\.(.*)"
     match = re.match(regex, version)
     return match.groups() if match else ("0", "0", "0")
+
+
+def feature_flag_on(flag: str, default: bool = False):
+    env = os.environ.get(flag, str(default))
+    return env.lower() in ["true", "1", "t", "y", "yes"]
